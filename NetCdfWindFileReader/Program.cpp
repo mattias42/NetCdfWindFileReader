@@ -19,75 +19,6 @@ static std::string FormatType(nc_type type)
     }
 }
 
-static std::vector<int> GetDimensionIndicesOfVariable(int ncFileId, int variableIdx)
-{
-    int nofDimensions = 0;
-    int status = nc_inq_varndims(ncFileId, variableIdx, &nofDimensions);
-
-    std::vector<int> dimensions(nofDimensions);
-    status = nc_inq_vardimid(ncFileId, variableIdx, dimensions.data());
-
-    return dimensions;
-}
-
-static std::vector<size_t> GetSizeOfVariable(int ncFileIdx, int variableIdx)
-{
-    auto dimensionIndices = GetDimensionIndicesOfVariable(ncFileIdx, variableIdx);
-    std::vector<size_t> sizes(dimensionIndices.size());
-
-    for (size_t ii = 0; ii < dimensionIndices.size(); ++ii)
-    {
-        size_t value = 0;
-        int status = nc_inq_dimlen(ncFileIdx, dimensionIndices[ii], &value);
-        sizes[ii] = value;
-    }
-
-    return sizes;
-}
-
-static std::vector<float> Read1dFloatVariable(int ncFileId, int variableIdx)
-{
-    std::vector<size_t> variableSize = GetSizeOfVariable(ncFileId, variableIdx);
-    if (variableSize.size() != 1)
-    {
-        std::stringstream message;
-        message << "Function 'Read1dFloatVariable' can only be used to read a one-dimensional variable, but variable " << variableIdx << " contains " << variableSize.size() << " dimensions.";
-        throw std::invalid_argument(message.str());
-    }
-
-    std::vector<float> values(variableSize[0]);
-
-    int status = nc_get_var_float(ncFileId, variableIdx, values.data());
-
-    return values;
-}
-
-static size_t GetNumberOfElements(std::vector<size_t> sizes)
-{
-    size_t product = 1;
-
-    for (size_t dim : sizes)
-    {
-        product *= dim;
-    }
-
-    return product;
-}
-
-static std::vector<float> ReadNdFloatVariable(int ncFileId, int variableIdx)
-{
-    std::vector<size_t> variableSize = GetSizeOfVariable(ncFileId, variableIdx);
-
-    size_t size = GetNumberOfElements(variableSize);
-
-    std::vector<float> values(size);
-
-    int status = nc_get_var_float(ncFileId, variableIdx, values.data());
-
-    return values;
-}
-
-
 bool PrintFileInformation(int ncFileId)
 {
     // Inquire the file about groups
@@ -181,6 +112,51 @@ bool PrintFileInformation(int ncFileId)
     return true;
 }
 
+template<class T>
+void Add(std::vector<T>& elements, T value)
+{
+    for (size_t ii = 0; ii < elements.size(); ++ii)
+    {
+        elements[ii] += value;
+    }
+}
+
+// Returns the (first) index into the provided vector where the valueToFind is found
+//  This assumes that values is a one-dimensional vector
+//  But does not assume that values is sorted in any way.
+//  @throws std::invalid_argument if the value cannot be found.
+double GetFractionalIndex(const std::vector<float>& values, float valueToFind)
+{
+    for (size_t ii = 1; ii < values.size(); ++ii)
+    {
+        if (values[ii - 1] <= valueToFind && values[ii] >= valueToFind)
+        {
+            return (ii - 1) + (valueToFind - values[ii - 1]) / (values[ii] - values[ii - 1]);
+        }
+        else if (values[ii - 1] >= valueToFind && values[ii] <= valueToFind)
+        {
+            return (ii - 1) + 1 - (valueToFind - values[ii]) / (values[ii - 1] - values[ii]);
+        }
+    }
+
+    throw std::invalid_argument("Cannot find the value in the provided vector.");
+}
+
+// Interpolates between the values floor(index) and ceil(index)
+//  @throws std::invalid_argument if index < 0 or index >= values.size();
+double Interpolate(const std::vector<float>& values, double index)
+{
+    int ii = (int)std::floor(index);
+    double alpha = index - (double)ii;
+
+    if (ii < 0.0 || ii >= values.size() - 2)
+    {
+        throw std::invalid_argument("Invalid index for interpolation.");
+    }
+
+    return values[ii] * (1.0 - alpha) + values[ii + 1] * alpha;
+}
+
 int main(void)
 {
     auto filename = "D:\\Development\\FromSantiago\\netcdfToText\\villarrica_200501_201701.nc";
@@ -196,12 +172,55 @@ int main(void)
         } */
 
         // get the different variables which we need
+        auto longitudeSize = fileReader.GetSizeOfVariable("longitude");
         auto longitude = fileReader.ReadVariableAsFloat("longitude");
+        Add<float>(longitude, -360.0F);
+
+        auto latitudeSize = fileReader.GetSizeOfVariable("latitude");
         auto latitude = fileReader.ReadVariableAsFloat("latitude");
+
+        auto levelSize = fileReader.GetSizeOfVariable("level");
         auto level = fileReader.ReadVariableAsFloat("level");
+
+        auto timeSize = fileReader.GetSizeOfVariable("time");
         auto time = fileReader.ReadVariableAsFloat("time");
+
+        auto uSize = fileReader.GetSizeOfVariable("u");
         auto u = fileReader.ReadVariableAsFloat("u");
+
+        auto vSize = fileReader.GetSizeOfVariable("v");
         auto v = fileReader.ReadVariableAsFloat("v");
+
+        double villarica_latitude = -39.42;
+        double villarica_longitude = -71.93;
+        double villarica_altitude_m = 2847.0;
+
+        // TODO: where to find these
+        std::vector<float> levels
+        {
+            225, 250, 300, 350, 400, 450,
+            500, 550, 600, 650, 700, 750,
+            775, 800, 825, 850, 875, 900,
+            925, 950, 975, 1000
+        };
+
+        // TODO: where to find these
+        std::vector<float> altitudes_km
+        {
+            10.42F,9.59F, 8.81F, 7.38F, 6.71F, 5.50F,
+            4.94F, 4.42F, 3.48F, 3.06F, 2.67F, 2.31F,
+            1.98F, 1.68F, 1.41F, 1.17F, 0.95F, 0.76F,
+            0.60F, 0.46F, 0.24F, 0.10F
+        };
+        double altitudeIdx = GetFractionalIndex(altitudes_km, villarica_altitude_m * 0.001);
+        double villarica_level = Interpolate(levels, altitudeIdx);
+
+        double latitudeIdx = GetFractionalIndex(latitude, villarica_latitude);
+        double longitudeIdx = GetFractionalIndex(longitude, villarica_longitude);
+        double levelIdx = GetFractionalIndex(level, villarica_level);
+
+
+
 
     }
     catch (std::exception e)
