@@ -1,7 +1,6 @@
 #include <netcdf.h>
 #include <stdio.h>
-#include <string>
-#include <vector>
+#include "NetCdfFileReader.h"
 #include <sstream>
 #include <iostream>
 
@@ -184,53 +183,31 @@ bool PrintFileInformation(int ncFileId)
 
 int main(void)
 {
-    int ncFileId = 0;
     auto filename = "D:\\Development\\FromSantiago\\netcdfToText\\villarrica_200501_201701.nc";
 
     try
     {
-        int status = nc_open(filename, NC_NOWRITE, &ncFileId);
-        if (status != NC_NOERR)
-        {
-            printf("Error reading file: " + status);
-            return 1;
-        }
+        NetCdfFileReader fileReader;
+        fileReader.Open(filename);
 
-        if (!PrintFileInformation(ncFileId))
+        /* if (!PrintFileInformation(ncFileId))
         {
             return 1;
-        }
+        } */
 
-        // get the id:s of the different variables which we need
-        int latIdx = 0;
-        int lonIdx = 0;
-        int levelIdx = 0;
-        int timeIdx = 0;
-        int uIdx = 0;
-        int vIdx = 0;
-        int ccIdx = 0;
-        status = nc_inq_varid(ncFileId, "longitude", &lonIdx);
-        status = nc_inq_varid(ncFileId, "latitude", &latIdx);
-        status = nc_inq_varid(ncFileId, "level", &levelIdx);
-        status = nc_inq_varid(ncFileId, "time", &timeIdx);
-        status = nc_inq_varid(ncFileId, "u", &uIdx);
-        status = nc_inq_varid(ncFileId, "v", &vIdx);
-        status = nc_inq_varid(ncFileId, "cc", &ccIdx);
-
-        auto longitude = Read1dFloatVariable(ncFileId, lonIdx);
-        auto latitude = Read1dFloatVariable(ncFileId, latIdx);
-        auto level = Read1dFloatVariable(ncFileId, levelIdx);
-        auto time = Read1dFloatVariable(ncFileId, timeIdx);
-        auto u = ReadNdFloatVariable(ncFileId, uIdx);
-        auto v = ReadNdFloatVariable(ncFileId, vIdx);
+        // get the different variables which we need
+        auto longitude = fileReader.ReadVariableAsFloat("longitude");
+        auto latitude = fileReader.ReadVariableAsFloat("latitude");
+        auto level = fileReader.ReadVariableAsFloat("level");
+        auto time = fileReader.ReadVariableAsFloat("time");
+        auto u = fileReader.ReadVariableAsFloat("u");
+        auto v = fileReader.ReadVariableAsFloat("v");
 
     }
     catch (std::exception e)
     {
         std::cout << e.what() << std::endl;
     }
-
-    nc_close(ncFileId);
 
     std::cout << "Net cdf file reader done.";
 }
