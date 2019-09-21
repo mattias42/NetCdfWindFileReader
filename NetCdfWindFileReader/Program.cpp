@@ -157,6 +157,21 @@ double Interpolate(const std::vector<float>& values, double index)
     return values[ii] * (1.0 - alpha) + values[ii + 1] * alpha;
 }
 
+double InterpolateValue(const std::vector<float>& input, const std::vector<size_t>& inputDimensions, const std::vector<double>& interpIndex)
+{
+    // check the inputs
+    if (input.size() != ProductOfElements(inputDimensions))
+    {
+        throw std::invalid_argument("Invalid dimensions for multi-dimensional vector.");
+    }
+    if (inputDimensions.size() != interpIndex.size())
+    {
+        throw std::invalid_argument("Invalid dimensions for multi-dimensional vector.");
+    }
+
+
+}
+
 int main(void)
 {
     auto filename = "D:\\Development\\FromSantiago\\netcdfToText\\villarrica_200501_201701.nc";
@@ -219,7 +234,7 @@ int main(void)
         double longitudeIdx = GetFractionalIndex(longitude, villarica_longitude);
         double levelIdx = GetFractionalIndex(level, villarica_level);
 
-
+        InterpolateValues(u, latitudeIdx, longitudeIdx, levelIdx, -1);
 
 
     }

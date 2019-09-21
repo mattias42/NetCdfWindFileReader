@@ -15,6 +15,9 @@ public:
     int statusCode = 0;
 };
 
+// TODO: Move
+size_t ProductOfElements(std::vector<size_t> sizes);
+
 class NetCdfFileReader
 {
 public:
