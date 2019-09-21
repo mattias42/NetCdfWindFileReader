@@ -63,6 +63,32 @@ static std::vector<float> Read1dFloatVariable(int ncFileId, int variableIdx)
     return values;
 }
 
+static size_t GetNumberOfElements(std::vector<size_t> sizes)
+{
+    size_t product = 1;
+
+    for (size_t dim : sizes)
+    {
+        product *= dim;
+    }
+
+    return product;
+}
+
+static std::vector<float> ReadNdFloatVariable(int ncFileId, int variableIdx)
+{
+    std::vector<size_t> variableSize = GetSizeOfVariable(ncFileId, variableIdx);
+
+    size_t size = GetNumberOfElements(variableSize);
+
+    std::vector<float> values(size);
+
+    int status = nc_get_var_float(ncFileId, variableIdx, values.data());
+
+    return values;
+}
+
+
 bool PrintFileInformation(int ncFileId)
 {
     // Inquire the file about groups
@@ -188,12 +214,15 @@ int main(void)
         status = nc_inq_varid(ncFileId, "level", &levelIdx);
         status = nc_inq_varid(ncFileId, "time", &timeIdx);
         status = nc_inq_varid(ncFileId, "u", &uIdx);
+        status = nc_inq_varid(ncFileId, "v", &vIdx);
         status = nc_inq_varid(ncFileId, "cc", &ccIdx);
 
-        std::vector<float> longitude = Read1dFloatVariable(ncFileId, lonIdx);
-        std::vector<float> latitude = Read1dFloatVariable(ncFileId, latIdx);
-        std::vector<float> level = Read1dFloatVariable(ncFileId, levelIdx);
-
+        auto longitude = Read1dFloatVariable(ncFileId, lonIdx);
+        auto latitude = Read1dFloatVariable(ncFileId, latIdx);
+        auto level = Read1dFloatVariable(ncFileId, levelIdx);
+        auto time = Read1dFloatVariable(ncFileId, timeIdx);
+        auto u = ReadNdFloatVariable(ncFileId, uIdx);
+        auto v = ReadNdFloatVariable(ncFileId, vIdx);
 
     }
     catch (std::exception e)
