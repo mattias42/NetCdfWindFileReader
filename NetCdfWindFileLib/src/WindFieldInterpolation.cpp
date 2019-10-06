@@ -1,6 +1,6 @@
 #include <WindFieldInterpolation.h>
 
-std::pair<std::vector<double>, std::vector<double>> InterpolateWind(
+InterpolatedWind InterpolateWind(
     const std::vector<float>& u,
     const std::vector<float>& v,
     const std::vector<size_t>& sizes,
@@ -56,5 +56,8 @@ std::pair<std::vector<double>, std::vector<double>> InterpolateWind(
         finalWindDirections[timeIdx] = TriLinearInterpolation(windDirTemp, spatialIndices[0] - dim0Floor, spatialIndices[1] - dim1Floor, spatialIndices[2] - dim2Floor);
     }
 
-    return std::pair<std::vector<double>, std::vector<double>>(finalWindSpeeds, finalWindDirections);
+    InterpolatedWind result;
+    result.speed = finalWindSpeeds;
+    result.direction = finalWindDirections;
+    return result;
 }

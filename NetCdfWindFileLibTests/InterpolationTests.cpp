@@ -35,8 +35,8 @@ TEST_CASE("Returns vector with one value per time", "[InterpolateWind]")
 
     auto result = InterpolateWind(u, v, size, indices);
 
-    REQUIRE(result.first.size() == 6);
-    REQUIRE(result.second.size() == 6);
+    REQUIRE(result.speed.size() == 6);
+    REQUIRE(result.direction.size() == 6);
 }
 
 TEST_CASE("Unit-wind field, returns all wind-speeds of sqrt_2", "[InterpolateWind]")
@@ -50,8 +50,25 @@ TEST_CASE("Unit-wind field, returns all wind-speeds of sqrt_2", "[InterpolateWin
 
     auto result = InterpolateWind(u, v, size, indices);
 
-    REQUIRE(result.first.size() == 6);
-    REQUIRE(result.first[0] == std::sqrt(2.0));
-    REQUIRE(result.first[3] == std::sqrt(2.0));
-    REQUIRE(result.first[5] == std::sqrt(2.0));
+    REQUIRE(result.speed.size() == 6);
+    REQUIRE(result.speed[0] == std::sqrt(2.0));
+    REQUIRE(result.speed[3] == std::sqrt(2.0));
+    REQUIRE(result.speed[5] == std::sqrt(2.0));
+}
+
+TEST_CASE("Unit-wind field, returns all wind-directions of -135 degrees", "[InterpolateWind]")
+{
+    std::vector<size_t> size = { 6, 2, 2, 2 };
+    std::vector<float> u(48);
+    std::fill_n(begin(u), 48, 1.0F);
+    std::vector<float> v(48);
+    std::fill_n(begin(v), 48, 1.0F);
+    std::vector<double> indices(3);
+
+    auto result = InterpolateWind(u, v, size, indices);
+
+    REQUIRE(result.direction.size() == 6);
+    REQUIRE(result.direction[0] == -135.0);
+    REQUIRE(result.direction[3] == -135.0);
+    REQUIRE(result.direction[5] == -135.0);
 }

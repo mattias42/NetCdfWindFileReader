@@ -17,6 +17,14 @@ double Interpolate(const std::vector<float>& values, double index);
 //  at the index values (which all must be in the interval [0,1])
 double TriLinearInterpolation(const std::vector<double>& inputCube, double idxZ, double idxY, double idxX); 
 
+struct InterpolatedWind
+{
+    std::vector<double> speed;
+    std::vector<double> speedError;
+    std::vector<double> direction; // [degrees]
+    std::vector<double> directionError; // [degrees]
+};
+
 /** Performs a linear interpolation to retrieve the (wind speed, wind direction)
     from the provided wind-field for all points in time.
     @param u The u-component of the wind-field.
@@ -29,7 +37,7 @@ double TriLinearInterpolation(const std::vector<double>& inputCube, double idxZ,
     @return two vector:s with the wind speeds and wind directions (in degrees)
         the number of values equals the size[0].
     */
-std::pair<std::vector<double>, std::vector<double>> InterpolateWind(
+InterpolatedWind InterpolateWind(
     const std::vector<float>& u,
     const std::vector<float>& v,
     const std::vector<size_t>& size,
