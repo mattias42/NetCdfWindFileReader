@@ -126,7 +126,9 @@
     <ClInclude Include="include\WindFieldInterpolation.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\MathUtils.cpp" />
     <ClCompile Include="src\NetCdfFileReader.cpp" />
+    <ClCompile Include="src\WindFieldInterpolation.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,15 +1,27 @@
 #pragma once
 #include <vector>
 
-size_t ProductOfElements(std::vector<size_t> sizes)
+template<class T>
+T ProductOfElements(std::vector<T> values)
 {
-    size_t product = 1;
+    T product = 1;
 
-    for (size_t dim : sizes)
+    for (T dim : values)
     {
         product *= dim;
     }
 
     return product;
 }
+
+// Adds one value to each element in the vector
+template<class T>
+void Add(std::vector<T>& elements, T value)
+{
+    for (size_t ii = 0; ii < elements.size(); ++ii)
+    {
+        elements[ii] += value;
+    }
+}
+
 

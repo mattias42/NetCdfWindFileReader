@@ -5,15 +5,7 @@
 #include <iostream>
 #include <algorithm>
 #include <WindFieldInterpolation.h>
-
-    template<class T>
-void Add(std::vector<T>& elements, T value)
-{
-    for (size_t ii = 0; ii < elements.size(); ++ii)
-    {
-        elements[ii] += value;
-    }
-}
+#include "MathUtils.h"
 
 int main(void)
 {
