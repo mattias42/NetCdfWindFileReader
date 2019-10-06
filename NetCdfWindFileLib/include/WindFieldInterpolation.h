@@ -13,9 +13,15 @@ double GetFractionalIndex(const std::vector<float>& values, float valueToFind);
 //  @throws std::invalid_argument if index < 0 or index >= values.size();
 double Interpolate(const std::vector<float>& values, double index);
 
+struct EstimatedValue
+{
+    double value;
+    double uncertainty;
+};
+
 // Performs a tri-linear interpolation on the input values, which must have the dimensions 2x2x2
 //  at the index values (which all must be in the interval [0,1])
-double TriLinearInterpolation(const std::vector<double>& inputCube, double idxZ, double idxY, double idxX); 
+EstimatedValue TriLinearInterpolation(const std::vector<double>& inputCube, double idxZ, double idxY, double idxX);
 
 struct InterpolatedWind
 {

@@ -9,21 +9,22 @@ TEST_CASE("TriLinearInterpolation unit cube with all ones, returns one", "[TriLi
 
     auto result = TriLinearInterpolation(input, 0.0, 0.0, 0.0);
 
-    REQUIRE(result == 1.0);
+    REQUIRE(result.value == 1.0);
+    REQUIRE(result.uncertainty == 0.0);
 }
 
 TEST_CASE("TriLinearInterpolation returns correct value at single corner", "[TriLinearInterpolation]")
 {
     std::vector<double> input = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0 };
 
-    REQUIRE(1.0 == TriLinearInterpolation(input, 0.0, 0.0, 0.0));
-    REQUIRE(2.0 == TriLinearInterpolation(input, 0.0, 0.0, 1.0));
-    REQUIRE(3.0 == TriLinearInterpolation(input, 0.0, 1.0, 0.0));
-    REQUIRE(4.0 == TriLinearInterpolation(input, 0.0, 1.0, 1.0));
-    REQUIRE(5.0 == TriLinearInterpolation(input, 1.0, 0.0, 0.0));
-    REQUIRE(6.0 == TriLinearInterpolation(input, 1.0, 0.0, 1.0));
-    REQUIRE(7.0 == TriLinearInterpolation(input, 1.0, 1.0, 0.0));
-    REQUIRE(8.0 == TriLinearInterpolation(input, 1.0, 1.0, 1.0));
+    REQUIRE(1.0 == TriLinearInterpolation(input, 0.0, 0.0, 0.0).value);
+    REQUIRE(2.0 == TriLinearInterpolation(input, 0.0, 0.0, 1.0).value);
+    REQUIRE(3.0 == TriLinearInterpolation(input, 0.0, 1.0, 0.0).value);
+    REQUIRE(4.0 == TriLinearInterpolation(input, 0.0, 1.0, 1.0).value);
+    REQUIRE(5.0 == TriLinearInterpolation(input, 1.0, 0.0, 0.0).value);
+    REQUIRE(6.0 == TriLinearInterpolation(input, 1.0, 0.0, 1.0).value);
+    REQUIRE(7.0 == TriLinearInterpolation(input, 1.0, 1.0, 0.0).value);
+    REQUIRE(8.0 == TriLinearInterpolation(input, 1.0, 1.0, 1.0).value);
 }
 
 TEST_CASE("Returns vector with one value per time", "[InterpolateWind]")
@@ -71,4 +72,38 @@ TEST_CASE("Unit-wind field, returns all wind-directions of -135 degrees", "[Inte
     REQUIRE(result.direction[0] == -135.0);
     REQUIRE(result.direction[3] == -135.0);
     REQUIRE(result.direction[5] == -135.0);
+}
+
+TEST_CASE("Unit-wind field, returns all wind-speed errors of zero (no gradient in wind field)", "[InterpolateWind]")
+{
+    std::vector<size_t> size = { 6, 2, 2, 2 };
+    std::vector<float> u(48);
+    std::fill_n(begin(u), 48, 1.0F);
+    std::vector<float> v(48);
+    std::fill_n(begin(v), 48, 1.0F);
+    std::vector<double> indices(3);
+
+    auto result = InterpolateWind(u, v, size, indices);
+
+    REQUIRE(result.speedError.size() == 6);
+    REQUIRE(result.speedError[0] == 0.0);
+    REQUIRE(result.speedError[3] == 0.0);
+    REQUIRE(result.speedError[5] == 0.0);
+}
+
+TEST_CASE("Unit-wind field, returns all wind-direction errors of zero (no gradient in wind field)", "[InterpolateWind]")
+{
+    std::vector<size_t> size = { 6, 2, 2, 2 };
+    std::vector<float> u(48);
+    std::fill_n(begin(u), 48, 1.0F);
+    std::vector<float> v(48);
+    std::fill_n(begin(v), 48, 1.0F);
+    std::vector<double> indices(3);
+
+    auto result = InterpolateWind(u, v, size, indices);
+
+    REQUIRE(result.directionError.size() == 6);
+    REQUIRE(result.directionError[0] == 0.0);
+    REQUIRE(result.directionError[3] == 0.0);
+    REQUIRE(result.directionError[5] == 0.0);
 }

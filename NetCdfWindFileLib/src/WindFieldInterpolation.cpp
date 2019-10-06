@@ -1,5 +1,21 @@
 #include <WindFieldInterpolation.h>
 
+EstimatedValue TriLinearInterpolation(const std::vector<double>& inputCube, double idxX, double idxY, double idxZ)
+{
+    double c00 = inputCube[0] * (1.0 - idxZ) + inputCube[1] * idxZ;
+    double c01 = inputCube[2] * (1.0 - idxZ) + inputCube[3] * idxZ;
+    double c10 = inputCube[4] * (1.0 - idxZ) + inputCube[5] * idxZ;
+    double c11 = inputCube[6] * (1.0 - idxZ) + inputCube[7] * idxZ;
+
+    double c0 = c00 * (1.0 - idxY) + c01 * idxY;
+    double c1 = c10 * (1.0 - idxY) + c11 * idxY;
+
+    EstimatedValue result;
+    result.value = c0 * (1.0 - idxX) + c1 * idxX;
+    result.uncertainty = c1 - c0;
+    return result;
+}
+
 InterpolatedWind InterpolateWind(
     const std::vector<float>& u,
     const std::vector<float>& v,
@@ -10,7 +26,9 @@ InterpolatedWind InterpolateWind(
     if (spatialIndices.size() != 3) throw new std::invalid_argument("Invalid data to InterpolateWind, there must be three spatial dimensions.");
 
     std::vector<double> finalWindSpeeds(sizes[0]);
+    std::vector<double> finalWindSpeedErrors(sizes[0]);
     std::vector<double> finalWindDirections(sizes[0]);
+    std::vector<double> finalWindDirectionErrors(sizes[0]);
 
     // temporary variables in the loop below.
     std::vector<double> uValues(8);
@@ -52,12 +70,19 @@ InterpolatedWind InterpolateWind(
 
         // Now perform a tri-linear interpolation inside this cube with wind-speed values to calculate
         //  the inerpolated wind-speed
-        finalWindSpeeds[timeIdx] = TriLinearInterpolation(windSpeedTemp, spatialIndices[0] - dim0Floor, spatialIndices[1] - dim1Floor, spatialIndices[2] - dim2Floor);
-        finalWindDirections[timeIdx] = TriLinearInterpolation(windDirTemp, spatialIndices[0] - dim0Floor, spatialIndices[1] - dim1Floor, spatialIndices[2] - dim2Floor);
+        auto interpSpeed = TriLinearInterpolation(windSpeedTemp, spatialIndices[0] - dim0Floor, spatialIndices[1] - dim1Floor, spatialIndices[2] - dim2Floor);
+        auto interpDirection = TriLinearInterpolation(windDirTemp, spatialIndices[0] - dim0Floor, spatialIndices[1] - dim1Floor, spatialIndices[2] - dim2Floor);
+
+        finalWindSpeeds[timeIdx] = interpSpeed.value;
+        finalWindSpeedErrors[timeIdx] = interpSpeed.uncertainty;
+        finalWindDirections[timeIdx] = interpDirection.value;
+        finalWindDirectionErrors[timeIdx] = interpDirection.uncertainty;
     }
 
     InterpolatedWind result;
     result.speed = finalWindSpeeds;
+    result.speedError = finalWindSpeedErrors;
     result.direction = finalWindDirections;
+    result.directionError = finalWindDirectionErrors;
     return result;
 }
