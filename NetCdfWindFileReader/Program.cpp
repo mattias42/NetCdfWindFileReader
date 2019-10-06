@@ -68,53 +68,10 @@ int main(void)
         double longitudeIdx = GetFractionalIndex(longitude, villarica_longitude);
         double levelIdx = GetFractionalIndex(level, villarica_level);
 
-        // Dimensions are [time, level, lat, lon]
-        // extract the wind-speed at all times for a fixed level, lat, lon.
-        std::vector<double> indices = { 0.0, levelIdx, latitudeIdx, longitudeIdx };
-        for (size_t timeIdx = 0; timeIdx < time.size(); ++timeIdx)
-        {
-            indices[0] = (double)timeIdx;
+        auto result = InterpolateWind(u, v, uSize, { levelIdx, latitudeIdx, longitudeIdx });
 
-            // ----------- Pick out the neighoring u- and v- values at this point in time -----------
-            // -----------      this is a small cube with 2x2x2 values     -----------
-            std::vector<double> uValues(8);
-            std::vector<double> vValues(8);
 
-            size_t lonFloor = (size_t)std::floor(longitudeIdx);
-            size_t latFloor = (size_t)std::floor(latitudeIdx);
-            size_t lvlFloor = (size_t)std::floor(levelIdx);
 
-            for (size_t lvlIdx = lvlFloor; lvlIdx <= lvlFloor + 1; ++lvlIdx)
-            {
-                for (size_t latIdx = latFloor; latIdx <= latFloor + 1; ++latIdx)
-                {
-                    for (size_t lonIdx = lonFloor; lonIdx <= lonFloor + 1; ++lonIdx)
-                    {
-                        size_t index = ((timeIdx * uSize[1] + lvlIdx) * uSize[2] + latIdx) * uSize[3] + lonIdx;
-
-                        size_t minorIndex = ((lvlIdx - lvlFloor) * 2 + (latIdx - latFloor)) * 2 + (lonIdx - lonFloor);
-
-                        uValues[minorIndex] = u[index];
-                        vValues[minorIndex] = v[index];
-                    }
-                }
-            }
-
-            // Calculate the wind-speed and wind-direction at each corner in the cube
-            std::vector<double> windSpeedTemp(8);
-            std::vector<double> windDirTemp(8);
-            for (size_t ii = 0; ii < 8; ++ii)
-            {
-                windSpeedTemp[ii] = std::sqrt(u[ii] * u[ii] + v[ii] * v[ii]);
-                windDirTemp[ii] = 180.0 * std::atan2(-u[ii], -v[ii]) / 3.14159265358979323846;
-            }
-
-            // Now perform a tri-linear interpolation inside this cube with wind-speed values to calculate
-            //  the inerpolated wind-speed
-            double ws = TriLinearInterpolation(windSpeedTemp, levelIdx - lvlFloor, latitudeIdx - latFloor, longitudeIdx - lonFloor);
-            double wd = TriLinearInterpolation(windDirTemp, levelIdx - lvlFloor, latitudeIdx - latFloor, longitudeIdx - lonFloor);
-
-        }
     }
     catch (std::exception e)
     {

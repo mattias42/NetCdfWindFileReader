@@ -30,8 +30,8 @@ double TriLinearInterpolation(const std::vector<double>& inputCube, double idxZ,
         the number of values equals the size[0].
     */
 std::pair<std::vector<double>, std::vector<double>> InterpolateWind(
-    const std::vector<double>& u,
-    const std::vector<double>& v,
+    const std::vector<float>& u,
+    const std::vector<float>& v,
     const std::vector<size_t>& size,
     const std::vector<double>& spatialIndices);
 
