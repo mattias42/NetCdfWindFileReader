@@ -1,4 +1,5 @@
 #include "NetCdfFileReader.h"
+#include <MathUtils.h>
 #include <netcdf.h>
 #include <sstream>
 
@@ -35,6 +36,110 @@ void NetCdfFileReader::Close()
     {
         nc_close(m_netCdfFileHandle);
         m_netCdfFileHandle = 0;
+    }
+}
+
+static std::string FormatType(nc_type type)
+{
+    switch (type)
+    {
+    case NC_BYTE: return "byte";
+    case NC_CHAR: return "char";
+    case NC_SHORT: return "short";
+    case NC_INT: return "int";
+    case NC_FLOAT: return "float";
+    case NC_DOUBLE: return "double";
+    case NC_STRING: return "string";
+    default: return "unknown";
+    }
+}
+
+void NetCdfFileReader::PrintFileInformation()
+{
+    // Inquire the file about groups
+    int nofDimensions = 0;
+    int nofVariables = 0;
+    int nofAttributes = 0;
+    int unlimdimidp = 0;
+    int status = nc_inq(this->m_netCdfFileHandle, &nofDimensions, &nofVariables, &nofAttributes, &unlimdimidp);
+    if (status != NC_NOERR)
+    {
+        printf("Error reading groups: " + status);
+    }
+
+    int fileFormat = 0;
+    status = nc_inq_format(this->m_netCdfFileHandle, &fileFormat);
+    if (status == NC_NOERR)
+    {
+        switch (fileFormat)
+        {
+        case NC_FORMAT_CLASSIC: printf(" File format: Classic\n"); break;
+        case NC_FORMAT_64BIT_OFFSET: printf(" File format: 64-bit offset\n"); break;
+        case NC_FORMAT_CDF5: printf(" File format: Cdf5\n"); break;
+        case NC_FORMAT_NETCDF4: printf(" File format: NetCdf4\n"); break;
+        case NC_FORMAT_NETCDF4_CLASSIC: printf(" File format: NetCdf4-Classic\n"); break;
+        default: printf(" File format: Unknown\n"); break;
+        }
+    }
+
+    printf("Number of global attributes in file: %d\n", nofAttributes);
+    for (int attributeIdx = 0; attributeIdx < nofAttributes; ++attributeIdx)
+    {
+        char attributeName[512];
+        nc_type attributeType;
+        size_t numberOfValues = 0;
+        status = nc_inq_attname(this->m_netCdfFileHandle, NC_GLOBAL, attributeIdx, attributeName);
+        status = nc_inq_atttype(this->m_netCdfFileHandle, NC_GLOBAL, attributeName, &attributeType);
+        status = nc_inq_attlen(this->m_netCdfFileHandle, NC_GLOBAL, attributeName, &numberOfValues);
+
+        auto typeName = FormatType(attributeType);
+
+        printf("  %d: '%s' of type %s with %zu values\n", attributeIdx, attributeName, typeName.c_str(), numberOfValues);
+    }
+
+    printf("Number of dimensions in file: %d\n", nofDimensions);
+    for (int dimensionIdx = 0; dimensionIdx < nofDimensions; ++dimensionIdx)
+    {
+        char nameBuffer[128];
+        size_t length = 0;
+        nc_inq_dim(this->m_netCdfFileHandle, dimensionIdx, nameBuffer, &length);
+
+        printf("  %d: '%s' with %zu values\n", dimensionIdx, nameBuffer, length);
+    }
+
+    printf("Number of unlimited dimensions in file: %d\n", unlimdimidp);
+
+    // List the variables
+    printf("Number of variables in file: %d\n", nofVariables);
+    for (int variableIdx = 0; variableIdx < nofVariables; ++variableIdx)
+    {
+        char variablename[128];
+        nc_type type;
+        int nofDimensions = 0;
+        int numberOfAttributes = 0;
+        nc_inq_var(this->m_netCdfFileHandle, variableIdx, variablename, &type, &nofDimensions, nullptr, &numberOfAttributes);
+
+        auto typeName = FormatType(type);
+
+        printf("  %d: '%s' of type %s with %d dimensions and %d attributes\n", variableIdx, variablename, typeName.c_str(), nofDimensions, numberOfAttributes);
+
+        // get the attributes
+        for (int attributeIdx = 0; attributeIdx < numberOfAttributes; ++attributeIdx)
+        {
+            char attributeName[128];
+            nc_inq_attname(this->m_netCdfFileHandle, variableIdx, attributeIdx, attributeName);
+            printf("        attribute %d: %s\n", attributeIdx, attributeName);
+        }
+
+        // get the dimensions
+        std::vector<int> dimensions(nofDimensions);
+        nc_inq_vardimid(this->m_netCdfFileHandle, variableIdx, dimensions.data());
+        for (int dimensionIdx = 0; dimensionIdx < nofDimensions; ++dimensionIdx)
+        {
+            char name[128];
+            nc_inq_dimname(this->m_netCdfFileHandle, dimensions[dimensionIdx], name);
+            printf("        dimension %d: %s\n", dimensionIdx, name);
+        }
     }
 }
 
@@ -105,18 +210,6 @@ std::vector<size_t> NetCdfFileReader::GetSizeOfVariable(const std::string& varia
     int index = GetIndexOfVariable(variableName);
 
     return GetSizeOfVariable(index);
-}
-
-size_t ProductOfElements(std::vector<size_t> sizes)
-{
-    size_t product = 1;
-
-    for (size_t dim : sizes)
-    {
-        product *= dim;
-    }
-
-    return product;
 }
 
 std::vector<float> NetCdfFileReader::ReadVariableAsFloat(int variableIdx)

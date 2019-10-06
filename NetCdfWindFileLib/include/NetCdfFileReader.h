@@ -1,22 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
-
-class NetCdfException : public std::exception
-{
-public:
-    NetCdfException(const char* message, int statusCode) 
-        : std::exception(message)
-    {
-        this->statusCode = statusCode;
-    }
-
-    // TODO: format these error codes, such that they are human-readable
-    int statusCode = 0;
-};
-
-// TODO: Move
-size_t ProductOfElements(std::vector<size_t> sizes);
+#include "NetCdfException.h"
 
 class NetCdfFileReader
 {
@@ -30,6 +15,9 @@ public:
     void Open(const std::string& filename);
 
     void Close();
+
+    /** Prints information on the currently opened net cdf file to console. */
+    void PrintFileInformation();
 
     /** @returns the index of the variable with the given name.
         @throws NetCdfExcetpion if this cannot be retrieved. */

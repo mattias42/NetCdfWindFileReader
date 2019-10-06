@@ -15,21 +15,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\NetCdfFileReader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\NetCdfException.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\MathUtils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\WindFieldInterpolation.h">
+    <ClInclude Include="catch.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\NetCdfFileReader.cpp">
+    <ClCompile Include="InterpolationTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
