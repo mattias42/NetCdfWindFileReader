@@ -3,6 +3,7 @@
 #include "NetCdfFileReader.h"
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 static std::string FormatType(nc_type type)
 {
@@ -143,6 +144,7 @@ double GetFractionalIndex(const std::vector<float>& values, float valueToFind)
 }
 
 // Interpolates between the values floor(index) and ceil(index)
+//  in the provided one-dimensional vector.
 //  @throws std::invalid_argument if index < 0 or index >= values.size();
 double Interpolate(const std::vector<float>& values, double index)
 {
@@ -157,19 +159,19 @@ double Interpolate(const std::vector<float>& values, double index)
     return values[ii] * (1.0 - alpha) + values[ii + 1] * alpha;
 }
 
-double InterpolateValue(const std::vector<float>& input, const std::vector<size_t>& inputDimensions, const std::vector<double>& interpIndex)
+// Performs a tri-linear interpolation on the input values, which must have the dimensions 2x2x2
+//  at the index values (which all must be in the interval [0,1])
+double TriLinearInterpolation(const std::vector<double>& inputCube, double idxZ, double idxY, double idxX)
 {
-    // check the inputs
-    if (input.size() != ProductOfElements(inputDimensions))
-    {
-        throw std::invalid_argument("Invalid dimensions for multi-dimensional vector.");
-    }
-    if (inputDimensions.size() != interpIndex.size())
-    {
-        throw std::invalid_argument("Invalid dimensions for multi-dimensional vector.");
-    }
+    double c00 = inputCube[0] * (1.0 - idxX) + inputCube[4] * idxX;
+    double c01 = inputCube[1] * (1.0 - idxX) + inputCube[5] * idxX;
+    double c10 = inputCube[2] * (1.0 - idxX) + inputCube[6] * idxX;
+    double c11 = inputCube[3] * (1.0 - idxX) + inputCube[7] * idxX;
 
+    double c0 = c00 * (1.0 - idxY) + c10 * idxY;
+    double c1 = c01 * (1.0 - idxY) + c11 * idxY;
 
+    return c0 * (1.0 - idxZ) + c1;
 }
 
 int main(void)
@@ -206,21 +208,20 @@ int main(void)
         auto vSize = fileReader.GetSizeOfVariable("v");
         auto v = fileReader.ReadVariableAsFloat("v");
 
+        // These values are to be taken from the list of volcanoes...
         double villarica_latitude = -39.42;
         double villarica_longitude = -71.93;
         double villarica_altitude_m = 2847.0;
 
-        // TODO: where to find these
-        std::vector<float> levels
+        // These are fixed and can be written into the program...
+        const std::vector<float> levels
         {
             225, 250, 300, 350, 400, 450,
             500, 550, 600, 650, 700, 750,
             775, 800, 825, 850, 875, 900,
             925, 950, 975, 1000
         };
-
-        // TODO: where to find these
-        std::vector<float> altitudes_km
+        const std::vector<float> altitudes_km
         {
             10.42F,9.59F, 8.81F, 7.38F, 6.71F, 5.50F,
             4.94F, 4.42F, 3.48F, 3.06F, 2.67F, 2.31F,
@@ -234,9 +235,53 @@ int main(void)
         double longitudeIdx = GetFractionalIndex(longitude, villarica_longitude);
         double levelIdx = GetFractionalIndex(level, villarica_level);
 
-        InterpolateValues(u, latitudeIdx, longitudeIdx, levelIdx, -1);
+        // Dimensions are [time, level, lat, lon]
+        // extract the wind-speed at all times for a fixed level, lat, lon.
+        std::vector<double> indices = { 0.0, levelIdx, latitudeIdx, longitudeIdx };
+        for (size_t timeIdx = 0; timeIdx < time.size(); ++timeIdx)
+        {
+            indices[0] = (double)timeIdx;
 
+            // ----------- Pick out the neighoring u- and v- values at this point in time -----------
+            // -----------      this is a small cube with 2x2x2 values     -----------
+            std::vector<double> uValues(8);
+            std::vector<double> vValues(8);
 
+            size_t lonFloor = (size_t)std::floor(longitudeIdx);
+            size_t latFloor = (size_t)std::floor(latitudeIdx);
+            size_t lvlFloor = (size_t)std::floor(levelIdx);
+
+            for (size_t lvlIdx = lvlFloor; lvlIdx <= lvlFloor + 1; ++lvlIdx)
+            {
+                for (size_t latIdx = latFloor; latIdx <= latFloor + 1; ++latIdx)
+                {
+                    for (size_t lonIdx = lonFloor; lonIdx <= lonFloor + 1; ++lonIdx)
+                    {
+                        size_t index = ((timeIdx * uSize[1] + lvlIdx) * uSize[2] + latIdx) * uSize[3] + lonIdx;
+
+                        size_t minorIndex = ((lvlIdx - lvlFloor) * 2 + (latIdx - latFloor)) * 2 + (lonIdx - lonFloor);
+
+                        uValues[minorIndex] = u[index];
+                        vValues[minorIndex] = v[index];
+                    }
+                }
+            }
+
+            // Calculate the wind-speed and wind-direction at each corner in the cube
+            std::vector<double> windSpeedTemp(8);
+            std::vector<double> windDirTemp(8);
+            for (size_t ii = 0; ii < 8; ++ii)
+            {
+                windSpeedTemp[ii] = std::sqrt(u[ii] * u[ii] + v[ii] * v[ii]);
+                windDirTemp[ii] = 180.0 * std::atan2(-u[ii], -v[ii]) / 3.14159265358979323846;
+            }
+
+            // Now perform a tri-linear interpolation inside this cube with wind-speed values to calculate
+            //  the inerpolated wind-speed
+            double ws = TriLinearInterpolation(windSpeedTemp, levelIdx - lvlFloor, latitudeIdx - latFloor, longitudeIdx - lonFloor);
+            double wd = TriLinearInterpolation(windDirTemp, levelIdx - lvlFloor, latitudeIdx - latFloor, longitudeIdx - lonFloor);
+
+        }
     }
     catch (std::exception e)
     {

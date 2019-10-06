@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NetCdfWindFileReader", "NetCdfWindFileReader\NetCdfWindFileReader.vcxproj", "{27E2B5F9-25AF-4DA7-8D94-DD05C65EF42E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NetCdfWindFileLib", "NetCdfWindFileLib\NetCdfWindFileLib.vcxproj", "{0BBC2708-C203-4055-9C24-C5EA9FAC7DF4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{27E2B5F9-25AF-4DA7-8D94-DD05C65EF42E}.Release|x64.Build.0 = Release|x64
 		{27E2B5F9-25AF-4DA7-8D94-DD05C65EF42E}.Release|x86.ActiveCfg = Release|Win32
 		{27E2B5F9-25AF-4DA7-8D94-DD05C65EF42E}.Release|x86.Build.0 = Release|Win32
+		{0BBC2708-C203-4055-9C24-C5EA9FAC7DF4}.Debug|x64.ActiveCfg = Debug|x64
+		{0BBC2708-C203-4055-9C24-C5EA9FAC7DF4}.Debug|x64.Build.0 = Debug|x64
+		{0BBC2708-C203-4055-9C24-C5EA9FAC7DF4}.Debug|x86.ActiveCfg = Debug|Win32
+		{0BBC2708-C203-4055-9C24-C5EA9FAC7DF4}.Debug|x86.Build.0 = Debug|Win32
+		{0BBC2708-C203-4055-9C24-C5EA9FAC7DF4}.Release|x64.ActiveCfg = Release|x64
+		{0BBC2708-C203-4055-9C24-C5EA9FAC7DF4}.Release|x64.Build.0 = Release|x64
+		{0BBC2708-C203-4055-9C24-C5EA9FAC7DF4}.Release|x86.ActiveCfg = Release|Win32
+		{0BBC2708-C203-4055-9C24-C5EA9FAC7DF4}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
