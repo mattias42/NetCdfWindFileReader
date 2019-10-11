@@ -3,7 +3,9 @@
 #include "NetCdfFileReader.h"
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include <algorithm>
+#include <time.h>
 #include <WindFieldInterpolation.h>
 #include "MathUtils.h"
 
@@ -68,8 +70,24 @@ int main(void)
 
         auto result = InterpolateWind(u, v, uSize, { levelIdx, latitudeIdx, longitudeIdx });
 
+        // Save all the values for the NovacProgram to read
+        std::ofstream windFieldFile { "D:\\Development\\FromSantiago\\netcdfToText\\MattiasOutput_villarrica_200501_201701.txt" };
+        windFieldFile << "date time ws wd" << std::endl;
+        for (size_t ii = 0; ii < time.size(); ++ii)
+        {
+            // time is hours since 1900-01-01 00:00:0.0
+            time_t rawtimeSinceEpoch = time[ii] * 3600 - 2208988800L;
 
+            // Format time, "ddd yyyy-mm-dd hh:mm:ss zzz"
+            char buf[80];
+            struct tm ts;
+            localtime_s(&ts, &rawtimeSinceEpoch);
+            strftime(buf, sizeof(buf), "%Y.%m.%d %H:%M:%S", &ts);
 
+            windFieldFile << buf << " ";
+            windFieldFile << result.speed[ii] << " ";
+            windFieldFile << result.direction[ii] << std::endl;
+        }
     }
     catch (std::exception e)
     {
