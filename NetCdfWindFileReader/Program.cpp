@@ -73,10 +73,12 @@ int main(void)
         // Save all the values for the NovacProgram to read
         std::ofstream windFieldFile { "D:\\Development\\FromSantiago\\netcdfToText\\MattiasOutput_villarrica_200501_201701.txt" };
         windFieldFile << "date time ws wd" << std::endl;
+        windFieldFile.precision(3);
+        windFieldFile << std::fixed;
         for (size_t ii = 0; ii < time.size(); ++ii)
         {
             // time is hours since 1900-01-01 00:00:0.0
-            time_t rawtimeSinceEpoch = time[ii] * 3600 - 2208988800L;
+            time_t rawtimeSinceEpoch = (time_t)(time[ii] * 3600.0) - 2208988800L;
 
             // Format time, "ddd yyyy-mm-dd hh:mm:ss zzz"
             char buf[80];
