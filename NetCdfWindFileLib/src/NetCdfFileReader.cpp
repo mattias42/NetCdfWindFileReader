@@ -231,10 +231,74 @@ std::vector<float> NetCdfFileReader::ReadVariableAsFloat(int variableIdx)
     return values;
 }
 
+std::vector<float> NetCdfFileReader::ReadVariableAsFloat(int variableIdx, const LinearScaling& scaling)
+{
+    std::vector<float> values = ReadVariableAsFloat(variableIdx);
+
+    for (size_t ii = 0; ii < values.size(); ++ii)
+    {
+        values[ii] = values[ii] * scaling.scaleFactor + scaling.offset;
+    }
+
+    return values;
+}
+
 std::vector<float> NetCdfFileReader::ReadVariableAsFloat(const std::string& variableName)
 {
     int index = GetIndexOfVariable(variableName);
 
-    return ReadVariableAsFloat(index);
+    LinearScaling variableScaling;
+    if (GetLinearScalingForVariable(index, variableScaling))
+    {
+        return ReadVariableAsFloat(index, variableScaling);
+    }
+    else
+    {
+        return ReadVariableAsFloat(index);
+    }
 }
 
+std::vector<float> NetCdfFileReader::ReadVariableAsFloat(const std::string& variableName, const LinearScaling& scaling)
+{
+    int index = GetIndexOfVariable(variableName);
+
+    return ReadVariableAsFloat(index, scaling);
+}
+
+int NetCdfFileReader::GetNumberOfAttributesForVariable(int variableIdx)
+{
+    int numberOfAttributes = 0;
+    int error = nc_inq_natts(this->m_netCdfFileHandle, &numberOfAttributes);
+
+    if (error == NC_NOERR)
+    {
+        return numberOfAttributes;
+    }
+    return -1;
+}
+
+bool NetCdfFileReader::GetLinearScalingForVariable(int variableIdx, NetCdfFileReader::LinearScaling& scaling)
+{
+    int numberOfAttributes = GetNumberOfAttributesForVariable(variableIdx);
+    if (numberOfAttributes < 0)
+    {
+        return false;
+    }
+
+    bool scalingFoundInFile = false;
+    double scaleFactorValue = 1.0;
+    if (NC_NOERR == nc_get_att_double(this->m_netCdfFileHandle, variableIdx, "scale_factor", &scaleFactorValue))
+    {
+        scaling.scaleFactor = scaleFactorValue;
+        scalingFoundInFile = true;
+    }
+
+    double additionalOffsetValue = 1.0;
+    if (NC_NOERR == nc_get_att_double(this->m_netCdfFileHandle, variableIdx, "add_offset", &additionalOffsetValue))
+    {
+        scaling.offset = additionalOffsetValue;
+        scalingFoundInFile = true;
+    }
+
+    return scalingFoundInFile;
+}

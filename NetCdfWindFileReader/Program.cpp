@@ -16,10 +16,8 @@ int main(void)
         NetCdfFileReader fileReader;
         fileReader.Open(filename);
 
-        /* if (!PrintFileInformation(ncFileId))
-        {
-            return 1;
-        } */
+        // fileReader.PrintFileInformation();
+        // return 1;
 
         // get the different variables which we need
         auto longitudeSize = fileReader.GetSizeOfVariable("longitude");
