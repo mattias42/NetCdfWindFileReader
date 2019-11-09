@@ -25,10 +25,19 @@ InterpolatedWind InterpolateWind(
     if (sizes.size() != 4) throw new std::invalid_argument("Invalid data to InterpolateWind, the data must be four-dimensional.");
     if (spatialIndices.size() != 3) throw new std::invalid_argument("Invalid data to InterpolateWind, there must be three spatial dimensions.");
 
-    std::vector<double> finalWindSpeeds(sizes[0]);
-    std::vector<double> finalWindSpeedErrors(sizes[0]);
-    std::vector<double> finalWindDirections(sizes[0]);
-    std::vector<double> finalWindDirectionErrors(sizes[0]);
+    const size_t timeDim = 0;
+    const size_t lvlDim = 1;
+    const size_t latDim = 2;
+    const size_t lonDim = 3;
+
+    const size_t lvlFloor = (size_t)std::floor(spatialIndices[0]);
+    const size_t latFloor = (size_t)std::floor(spatialIndices[1]);
+    const size_t lonFloor = (size_t)std::floor(spatialIndices[2]);
+
+    std::vector<double> finalWindSpeeds(sizes[timeDim]);
+    std::vector<double> finalWindSpeedErrors(sizes[timeDim]);
+    std::vector<double> finalWindDirections(sizes[timeDim]);
+    std::vector<double> finalWindDirectionErrors(sizes[timeDim]);
 
     // temporary variables in the loop below.
     std::vector<double> uValues(8);
@@ -37,23 +46,19 @@ InterpolatedWind InterpolateWind(
     std::vector<double> windDirTemp(8);
 
     // Dimensions are [time, level, lat, lon]
-    for (size_t timeIdx = 0; timeIdx < sizes[0]; ++timeIdx)
+    for (size_t timeIdx = 0; timeIdx < sizes[timeDim]; ++timeIdx)
     {
         // ----------- Pick out the neighoring u- and v- values at this point in time -----------
         // -----------      this is a small cube with 2x2x2 values     -----------
-        size_t dim2Floor = (size_t)std::floor(spatialIndices[2]);
-        size_t dim1Floor = (size_t)std::floor(spatialIndices[1]);
-        size_t dim0Floor = (size_t)std::floor(spatialIndices[0]);
-
-        for (size_t lvlIdx = dim0Floor; lvlIdx <= dim0Floor + 1; ++lvlIdx)
+        for (size_t lvlIdx = lvlFloor; lvlIdx <= lvlFloor + 1; ++lvlIdx)
         {
-            for (size_t latIdx = dim1Floor; latIdx <= dim1Floor + 1; ++latIdx)
+            for (size_t latIdx = latFloor; latIdx <= latFloor + 1; ++latIdx)
             {
-                for (size_t lonIdx = dim2Floor; lonIdx <= dim2Floor + 1; ++lonIdx)
+                for (size_t lonIdx = lonFloor; lonIdx <= lonFloor + 1; ++lonIdx)
                 {
-                    size_t index = ((timeIdx * sizes[1] + lvlIdx) * sizes[2] + latIdx) * sizes[3] + lonIdx;
+                    size_t index = ((timeIdx * sizes[lvlDim] + lvlIdx) * sizes[latDim] + latIdx) * sizes[lonDim] + lonIdx;
 
-                    size_t minorIndex = ((lvlIdx - dim0Floor) * 2 + (latIdx - dim1Floor)) * 2 + (lonIdx - dim2Floor);
+                    size_t minorIndex = ((lvlIdx - lvlFloor) * 2 + (latIdx - latFloor)) * 2 + (lonIdx - lonFloor);
 
                     uValues[minorIndex] = u[index];
                     vValues[minorIndex] = v[index];
@@ -70,8 +75,8 @@ InterpolatedWind InterpolateWind(
 
         // Now perform a tri-linear interpolation inside this cube with wind-speed values to calculate
         //  the inerpolated wind-speed
-        auto interpSpeed = TriLinearInterpolation(windSpeedTemp, spatialIndices[0] - dim0Floor, spatialIndices[1] - dim1Floor, spatialIndices[2] - dim2Floor);
-        auto interpDirection = TriLinearInterpolation(windDirTemp, spatialIndices[0] - dim0Floor, spatialIndices[1] - dim1Floor, spatialIndices[2] - dim2Floor);
+        auto interpSpeed = TriLinearInterpolation(windSpeedTemp, spatialIndices[0] - lvlFloor, spatialIndices[1] - latFloor, spatialIndices[2] - lonFloor);
+        auto interpDirection = TriLinearInterpolation(windDirTemp, spatialIndices[0] - lvlFloor, spatialIndices[1] - latFloor, spatialIndices[2] - lonFloor);
 
         finalWindSpeeds[timeIdx] = interpSpeed.value;
         finalWindSpeedErrors[timeIdx] = interpSpeed.uncertainty;

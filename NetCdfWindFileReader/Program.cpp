@@ -1,4 +1,5 @@
 #include <netcdf.h>
+#include <iomanip>
 #include <stdio.h>
 #include "NetCdfFileReader.h"
 #include <sstream>
@@ -61,20 +62,18 @@ int main(void)
             1.98F, 1.68F, 1.41F, 1.17F, 0.95F, 0.76F,
             0.60F, 0.46F, 0.24F, 0.10F
         };
-        double altitudeIdx = GetFractionalIndex(altitudes_km, villarica_altitude_m * 0.001);
-        double villarica_level = Interpolate(levels, altitudeIdx);
 
-        double latitudeIdx = GetFractionalIndex(latitude, villarica_latitude);
-        double longitudeIdx = GetFractionalIndex(longitude, villarica_longitude);
-        double levelIdx = GetFractionalIndex(level, villarica_level);
+        const double latitudeIdx = GetFractionalIndex(latitude, villarica_latitude);
+        const double longitudeIdx = GetFractionalIndex(longitude, villarica_longitude);
+        const double levelIdx = GetFractionalIndex(altitudes_km, villarica_altitude_m * 0.001);
 
         auto result = InterpolateWind(u, v, uSize, { levelIdx, latitudeIdx, longitudeIdx });
 
         // Save all the values for the NovacProgram to read
-        std::ofstream windFieldFile { "D:\\Development\\FromSantiago\\netcdfToText\\MattiasOutput_villarrica_200501_201701.txt" };
+        std::ofstream windFieldFile{ "D:\\Development\\FromSantiago\\netcdfToText\\MattiasOutput_villarrica_200501_201701.txt" };
         windFieldFile << "date time ws wd" << std::endl;
-        windFieldFile.precision(3);
-        windFieldFile << std::fixed;
+        windFieldFile.precision(1);
+        windFieldFile << std::fixed << std::setw(4) << std::setfill(' ');
         for (size_t ii = 0; ii < time.size(); ++ii)
         {
             // time is hours since 1900-01-01 00:00:0.0
