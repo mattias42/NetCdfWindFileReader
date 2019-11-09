@@ -265,6 +265,66 @@ std::vector<float> NetCdfFileReader::ReadVariableAsFloat(const std::string& vari
     return ReadVariableAsFloat(index, scaling);
 }
 
+std::vector<float> NetCdfFileReader::ReadVariableAsShort(int variableIdx)
+{
+    std::vector<size_t> variableSize = GetSizeOfVariable(variableIdx);
+
+    size_t totalNumberOfElements = ProductOfElements(variableSize);
+
+    std::vector<short> values(totalNumberOfElements);
+
+    int status = nc_get_var_short(m_netCdfFileHandle, variableIdx, values.data());
+    if (status != NC_NOERR)
+    {
+        std::stringstream msg;
+        msg << "Failed to retrieve the values of variable '" << variableIdx << "'. Error code returned was: " << status;
+        throw NetCdfException(msg.str().c_str(), status);
+    }
+
+    // convert the values
+    auto convertedValues = std::vector<float>(values.size());
+    for (size_t ii = 0; ii < values.size(); ++ii)
+    {
+        convertedValues[ii] = (float)values[ii];
+    }
+
+    return convertedValues;
+}
+
+std::vector<float> NetCdfFileReader::ReadVariableAsShort(int variableIdx, const LinearScaling& scaling)
+{
+    std::vector<float> values = ReadVariableAsShort(variableIdx);
+
+    for (size_t ii = 0; ii < values.size(); ++ii)
+    {
+        values[ii] = values[ii] * scaling.scaleFactor + scaling.offset;
+    }
+
+    return values;
+}
+
+std::vector<float> NetCdfFileReader::ReadVariableAsShort(const std::string& variableName)
+{
+    int index = GetIndexOfVariable(variableName);
+
+    LinearScaling variableScaling;
+    if (GetLinearScalingForVariable(index, variableScaling))
+    {
+        return ReadVariableAsShort(index, variableScaling);
+    }
+    else
+    {
+        return ReadVariableAsFloat(index);
+    }
+}
+
+std::vector<float> NetCdfFileReader::ReadVariableAsShort(const std::string& variableName, const LinearScaling& scaling)
+{
+    int index = GetIndexOfVariable(variableName);
+
+    return ReadVariableAsShort(index, scaling);
+}
+
 int NetCdfFileReader::GetNumberOfAttributesForVariable(int variableIdx)
 {
     int numberOfAttributes = 0;

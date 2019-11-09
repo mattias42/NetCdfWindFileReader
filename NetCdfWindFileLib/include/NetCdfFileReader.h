@@ -56,6 +56,12 @@ public:
     std::vector<float> ReadVariableAsFloat(int variableIdx, const LinearScaling& scaling);
     std::vector<float> ReadVariableAsFloat(const std::string& variableName, const LinearScaling& scaling);
 
+    std::vector<float> ReadVariableAsShort(int variableIdx);
+    std::vector<float> ReadVariableAsShort(const std::string& variableName);
+    std::vector<float> ReadVariableAsShort(int variableIdx, const LinearScaling& scaling);
+    std::vector<float> ReadVariableAsShort(const std::string& variableName, const LinearScaling& scaling);
+
+
     /** Attempts to retrieve the size of the provided variable.
         For a multi-dimensional variable, the result will contain multiple dimensions.
         This will also read the entire variable from file at once,
