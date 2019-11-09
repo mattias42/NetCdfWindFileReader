@@ -3,6 +3,32 @@
 #include <algorithm>
 #include <WindFieldInterpolation.h>
 
+TEST_CASE("GetFractionalIndex increasing values, finds correct quarter points", "[GetFractionalIndex]")
+{
+    std::vector<float> input = { 0.0, 1.0, 2.0 };
+
+    auto result1 = GetFractionalIndex(input, 0.25F);
+    auto result2 = GetFractionalIndex(input, 0.75F);
+    auto result3 = GetFractionalIndex(input, 1.75F);
+
+    REQUIRE(result1 == 0.25);
+    REQUIRE(result2 == 0.75);
+    REQUIRE(result3 == 1.75);
+}
+
+TEST_CASE("GetFractionalIndex dcreasing values, finds correct quarter points", "[GetFractionalIndex]")
+{
+    std::vector<float> input = { 2.0, 1.0, 0.0 };
+
+    auto result1 = GetFractionalIndex(input, 0.25F);
+    auto result2 = GetFractionalIndex(input, 0.75F);
+    auto result3 = GetFractionalIndex(input, 1.75F);
+
+    REQUIRE(result1 == 2.0 - 0.25);
+    REQUIRE(result2 == 2.0 - 0.75);
+    REQUIRE(result3 == 2.0 - 1.75);
+}
+
 TEST_CASE("TriLinearInterpolation unit cube with all ones, returns one", "[TriLinearInterpolation]")
 {
     std::vector<double> input = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };

@@ -83,8 +83,8 @@ int main(void)
             // Format time, "ddd yyyy-mm-dd hh:mm:ss zzz"
             char buf[80];
             struct tm ts;
-            localtime_s(&ts, &rawtimeSinceEpoch);
-            strftime(buf, sizeof(buf), "%Y.%m.%d %H:%M:%S", &ts);
+            gmtime_s(&ts, &rawtimeSinceEpoch);
+            strftime(buf, sizeof(buf), "%Y.%m.%d %H:%M", &ts);
 
             windFieldFile << buf << " ";
             windFieldFile << result.speed[ii] << " ";
