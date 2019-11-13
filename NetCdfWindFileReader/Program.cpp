@@ -12,12 +12,22 @@
 
 int main(void)
 {
-    auto filename = "D:\\Development\\FromSantiago\\netcdfToText\\villarrica_200501_201701.nc";
+    std::string fileName = "villarrica_200501_201701";
+    std::string inputFilePath = "D:\\Development\\FromSantiago\\netcdfToText\\" + fileName + ".nc";
+
+    // These values are to be taken from the list of volcanoes...
+    const double volcano_latitude = -39.42;
+    const double volcano_longitude = -71.93;
+    const double volcano_altitude = 2847.0;
+    // const double volcano_latitude = -21.244;
+    // const double volcano_longitude = 55.708;
+    // const double volcano_altitude = 2632.0;
+
 
     try
     {
         NetCdfFileReader fileReader;
-        fileReader.Open(filename);
+        fileReader.Open(inputFilePath);
 
         // fileReader.PrintFileInformation();
         // return 1;
@@ -26,7 +36,6 @@ int main(void)
 
         // First the mandatory variables
         NetCdfTensor longitude = fileReader.ReadVariable("longitude");
-        Add<float>(longitude.values, -360.0F);
 
         NetCdfTensor latitude = fileReader.ReadVariable("latitude");
 
@@ -57,11 +66,6 @@ int main(void)
             cloudCoverage = fileReader.ReadVariable("cc");
         }
 
-        // These values are to be taken from the list of volcanoes...
-        double villarica_latitude = -39.42;
-        double villarica_longitude = -71.93;
-        double villarica_altitude_m = 2847.0;
-
         // These are fixed and can be written into the program...
         const std::vector<float> levels
         {
@@ -78,9 +82,19 @@ int main(void)
             0.60F, 0.46F, 0.24F, 0.10F
         };
 
-        const double latitudeIdx = GetFractionalIndex(latitude.values, villarica_latitude);
-        const double longitudeIdx = GetFractionalIndex(longitude.values, villarica_longitude);
-        const double levelIdx = GetFractionalIndex(altitudes_km, villarica_altitude_m * 0.001);
+        double latitudeIdx = 0.0;
+        double longitudeIdx = 0.0;
+
+        latitudeIdx = GetFractionalIndex(latitude.values, volcano_latitude);
+        try
+        {
+            longitudeIdx = GetFractionalIndex(longitude.values, volcano_longitude);
+        }
+        catch (std::exception&)
+        {
+            longitudeIdx = GetFractionalIndex(longitude.values, 360.0 + volcano_longitude);
+        }
+        const double levelIdx = GetFractionalIndex(altitudes_km, volcano_altitude * 0.001);
 
         InterpolatedWind result;
         InterpolateWind(
@@ -101,8 +115,17 @@ int main(void)
         }
 
         // Save all the values for the NovacProgram to read
-        std::ofstream windFieldFile{ "D:\\Development\\FromSantiago\\netcdfToText\\MattiasOutput_villarrica_200501_201701.txt" };
-        windFieldFile << "date time ws wse wd wde" << std::endl;
+        std::ofstream windFieldFile{ "D:\\Development\\FromSantiago\\netcdfToText\\MattiasOutput_" + fileName + ".txt" };
+        windFieldFile << "date time ";
+        if (result.cloudCoverage.size() > 0)
+        {
+            windFieldFile << "cc ";
+        }
+        if (result.relativeHumidity.size() > 0)
+        {
+            windFieldFile << "rh ";
+        }
+        windFieldFile << "ws wse wd wde" << std::endl;
         windFieldFile.precision(1);
         windFieldFile << std::fixed << std::setw(4) << std::setfill(' ');
         for (size_t ii = 0; ii < time.values.size(); ++ii)

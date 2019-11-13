@@ -60,7 +60,8 @@ TEST_CASE("Returns vector with one value per time", "[InterpolateWind]")
     std::vector<float> v(48);
     std::vector<double> indices(3);
 
-    auto result = InterpolateWind(u, v, size, indices);
+    InterpolatedWind result;
+    InterpolateWind(u, v, size, indices, result);
 
     REQUIRE(result.speed.size() == 6);
     REQUIRE(result.direction.size() == 6);
@@ -75,7 +76,8 @@ TEST_CASE("Unit-wind field, returns all wind-speeds of sqrt_2", "[InterpolateWin
     std::fill_n(begin(v), 48, 1.0F);
     std::vector<double> indices(3);
 
-    auto result = InterpolateWind(u, v, size, indices);
+    InterpolatedWind result;
+    InterpolateWind(u, v, size, indices, result);
 
     REQUIRE(result.speed.size() == 6);
     REQUIRE(result.speed[0] == std::sqrt(2.0));
@@ -92,7 +94,8 @@ TEST_CASE("Unit-wind field, returns all wind-directions of -135 degrees", "[Inte
     std::fill_n(begin(v), 48, 1.0F);
     std::vector<double> indices(3);
 
-    auto result = InterpolateWind(u, v, size, indices);
+    InterpolatedWind result;
+    InterpolateWind(u, v, size, indices, result);
 
     REQUIRE(result.direction.size() == 6);
     REQUIRE(result.direction[0] == -135.0);
@@ -109,7 +112,8 @@ TEST_CASE("Unit-wind field, returns all wind-speed errors of zero (no gradient i
     std::fill_n(begin(v), 48, 1.0F);
     std::vector<double> indices(3);
 
-    auto result = InterpolateWind(u, v, size, indices);
+    InterpolatedWind result;
+    InterpolateWind(u, v, size, indices, result);
 
     REQUIRE(result.speedError.size() == 6);
     REQUIRE(result.speedError[0] == 0.0);
@@ -126,7 +130,8 @@ TEST_CASE("Unit-wind field, returns all wind-direction errors of zero (no gradie
     std::fill_n(begin(v), 48, 1.0F);
     std::vector<double> indices(3);
 
-    auto result = InterpolateWind(u, v, size, indices);
+    InterpolatedWind result;
+    InterpolateWind(u, v, size, indices, result);
 
     REQUIRE(result.directionError.size() == 6);
     REQUIRE(result.directionError[0] == 0.0);
