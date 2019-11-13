@@ -42,14 +42,14 @@ void SelectCubeValues(const std::vector<float>& tensor, const std::vector<size_t
             }
         }
     }
-
 }
 
-InterpolatedWind InterpolateWind(
+void InterpolateWind(
     const std::vector<float>& u,
     const std::vector<float>& v,
     const std::vector<size_t>& sizes,
-    const std::vector<double>& spatialIndices)
+    const std::vector<double>& spatialIndices,
+    InterpolatedWind& result)
 {
     if (sizes.size() != 4) throw new std::invalid_argument("Invalid data to InterpolateWind, the data must be four-dimensional.");
     if (spatialIndices.size() != 3) throw new std::invalid_argument("Invalid data to InterpolateWind, there must be three spatial dimensions.");
@@ -105,10 +105,50 @@ InterpolatedWind InterpolateWind(
         finalWindDirectionErrors[timeIdx] = interpDirection.uncertainty;
     }
 
-    InterpolatedWind result;
     result.speed = finalWindSpeeds;
     result.speedError = finalWindSpeedErrors;
     result.direction = finalWindDirections;
     result.directionError = finalWindDirectionErrors;
-    return result;
+}
+
+void InterpolateValue(
+    const std::vector<float>& values,
+    const std::vector<size_t>& sizes,
+    const std::vector<double>& spatialIndices,
+    std::vector<double>& result)
+{
+    if (sizes.size() != 4) throw new std::invalid_argument("Invalid data to InterpolateValue, the data must be four-dimensional.");
+    if (spatialIndices.size() != 3) throw new std::invalid_argument("Invalid data to InterpolateValue, there must be three spatial dimensions.");
+
+    // defining the dimensions
+    const size_t timeDim = 0;
+    const size_t lvlDim = 1;
+    const size_t latDim = 2;
+    const size_t lonDim = 3;
+
+    const size_t lvlFloor = (size_t)std::floor(spatialIndices[0]);
+    const size_t latFloor = (size_t)std::floor(spatialIndices[1]);
+    const size_t lonFloor = (size_t)std::floor(spatialIndices[2]);
+
+    std::vector<size_t> floorIdx = { 0, lvlFloor, latFloor, lonFloor };
+
+    result.resize(sizes[timeDim]);
+
+    // temporary variable in the loop below.
+    std::vector<double> unitCubeValues(8);
+
+    // Dimensions are [time, level, latitude, longitude]
+    for (size_t timeIdx = 0; timeIdx < sizes[timeDim]; ++timeIdx)
+    {
+        floorIdx[timeDim] = timeIdx;
+
+        // ----------- Pick out the neighoring u- and v- values at this point in time -----------
+        // -----------      this is a small cube with 2x2x2 values     -----------
+        SelectCubeValues(values, sizes, floorIdx, unitCubeValues);
+
+        // Now perform a tri-linear interpolation inside this cube to calculate the interpolated value
+        auto interpValue = TriLinearInterpolation(unitCubeValues, spatialIndices[0] - lvlFloor, spatialIndices[1] - latFloor, spatialIndices[2] - lonFloor);
+
+        result[timeIdx] = interpValue.value;
+    }
 }

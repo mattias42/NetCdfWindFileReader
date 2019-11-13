@@ -82,11 +82,23 @@ int main(void)
         const double longitudeIdx = GetFractionalIndex(longitude.values, villarica_longitude);
         const double levelIdx = GetFractionalIndex(altitudes_km, villarica_altitude_m * 0.001);
 
-        auto result = InterpolateWind(
+        InterpolatedWind result;
+        InterpolateWind(
             u.values,
             v.values,
             u.size,
-            { levelIdx, latitudeIdx, longitudeIdx });
+            { levelIdx, latitudeIdx, longitudeIdx },
+            result);
+
+        if (relativeHumidity.values.size() > 0)
+        {
+            InterpolateValue(relativeHumidity.values, relativeHumidity.size, { levelIdx, latitudeIdx, longitudeIdx }, result.relativeHumidity);
+        }
+
+        if (cloudCoverage.values.size() > 0)
+        {
+            InterpolateValue(cloudCoverage.values, cloudCoverage.size, { levelIdx, latitudeIdx, longitudeIdx }, result.cloudCoverage);
+        }
 
         // Save all the values for the NovacProgram to read
         std::ofstream windFieldFile{ "D:\\Development\\FromSantiago\\netcdfToText\\MattiasOutput_villarrica_200501_201701.txt" };
