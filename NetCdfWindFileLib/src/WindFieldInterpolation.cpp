@@ -80,23 +80,12 @@ InterpolatedWind InterpolateWind(
     // Dimensions are [time, level, latitude, longitude]
     for (size_t timeIdx = 0; timeIdx < sizes[timeDim]; ++timeIdx)
     {
+        floorIdx[timeDim] = timeIdx;
+
         // ----------- Pick out the neighoring u- and v- values at this point in time -----------
         // -----------      this is a small cube with 2x2x2 values     -----------
-        for (size_t lvlIdx = lvlFloor; lvlIdx <= lvlFloor + 1; ++lvlIdx)
-        {
-            for (size_t latIdx = latFloor; latIdx <= latFloor + 1; ++latIdx)
-            {
-                for (size_t lonIdx = lonFloor; lonIdx <= lonFloor + 1; ++lonIdx)
-                {
-                    size_t index = ((timeIdx * sizes[lvlDim] + lvlIdx) * sizes[latDim] + latIdx) * sizes[lonDim] + lonIdx;
-
-                    size_t minorIndex = ((lvlIdx - lvlFloor) * 2 + (latIdx - latFloor)) * 2 + (lonIdx - lonFloor);
-
-                    uValues[minorIndex] = u[index];
-                    vValues[minorIndex] = v[index];
-                }
-            }
-        }
+        SelectCubeValues(u, sizes, floorIdx, uValues);
+        SelectCubeValues(v, sizes, floorIdx, vValues);
 
         // Calculate the wind-speed and wind-direction at each corner in the cube
         for (size_t ii = 0; ii < 8; ++ii)

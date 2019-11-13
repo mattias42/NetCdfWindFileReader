@@ -1,13 +1,23 @@
 #pragma once
+#include <map>
 #include <vector>
 #include <string>
 #include "NetCdfException.h"
 
-struct NetCdfVariable
+struct NetCdfDimension
+{
+    int index;
+    std::string name;
+};
+
+struct NetCdfTensor
 {
     // Defines the number of dimensions of this variable
     //  and the size in each dimension.
-    std::vector<size_t> dimensions;
+    std::vector<size_t> size;
+
+    // The dimensions of this variable
+    std::vector<NetCdfDimension> dimensions;
 
     // Stores the values of this variable.
     //  Multi-dimensional variables are stored as flattened arrays.
@@ -43,7 +53,7 @@ public:
 
     /** Reads one variable from this netcdf file and returns the result.
         @throws NetCdfException if the variable cannot be found or the file cannot be read. */
-    NetCdfVariable ReadVariable(const std::string& variableName);
+    NetCdfTensor ReadVariable(const std::string& variableName);
 
     /** Attempts to read the variable with the provided index
         and return the result as a float array.

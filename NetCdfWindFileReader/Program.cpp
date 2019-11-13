@@ -25,23 +25,23 @@ int main(void)
         // get the different variables which we need
 
         // First the mandatory variables
-        NetCdfVariable longitude = fileReader.ReadVariable("longitude");
+        NetCdfTensor longitude = fileReader.ReadVariable("longitude");
         Add<float>(longitude.values, -360.0F);
 
-        NetCdfVariable latitude = fileReader.ReadVariable("latitude");
+        NetCdfTensor latitude = fileReader.ReadVariable("latitude");
 
-        NetCdfVariable level = fileReader.ReadVariable("level");
+        NetCdfTensor level = fileReader.ReadVariable("level");
 
-        NetCdfVariable time = fileReader.ReadVariable("time");
+        NetCdfTensor time = fileReader.ReadVariable("time");
 
-        NetCdfVariable u = fileReader.ReadVariable("u");
+        NetCdfTensor u = fileReader.ReadVariable("u");
 
-        NetCdfVariable v = fileReader.ReadVariable("v");
+        NetCdfTensor v = fileReader.ReadVariable("v");
 
         // TODO: Check that the sizes of these variables agree...
 
         // Then the optional variables (which are not always defined in the file)
-        NetCdfVariable relativeHumidity;
+        NetCdfTensor relativeHumidity;
         if (fileReader.ContainsVariable("r"))
         {
             relativeHumidity = fileReader.ReadVariable("r");
@@ -51,7 +51,7 @@ int main(void)
             relativeHumidity = fileReader.ReadVariable("rh");
         }
 
-        NetCdfVariable cloudCoverage;
+        NetCdfTensor cloudCoverage;
         if (fileReader.ContainsVariable("cc"))
         {
             cloudCoverage = fileReader.ReadVariable("cc");
@@ -85,7 +85,7 @@ int main(void)
         auto result = InterpolateWind(
             u.values,
             v.values,
-            u.dimensions,
+            u.size,
             { levelIdx, latitudeIdx, longitudeIdx });
 
         // Save all the values for the NovacProgram to read

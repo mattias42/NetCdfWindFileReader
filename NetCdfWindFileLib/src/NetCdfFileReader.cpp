@@ -181,14 +181,30 @@ int NetCdfFileReader::GetIndexOfVariable(const std::string& variableName)
     return index;
 }
 
-NetCdfVariable NetCdfFileReader::ReadVariable(const std::string& variableName)
+NetCdfTensor NetCdfFileReader::ReadVariable(const std::string& variableName)
 {
-    NetCdfVariable result;
+    NetCdfTensor result;
 
     // retrieves the variable index, this throws an exception if the variable cannot be found.
     int variableIndex = GetIndexOfVariable(variableName);
 
-    result.dimensions = this->GetSizeOfVariable(variableIndex);
+    result.size = this->GetSizeOfVariable(variableIndex);
+
+    {
+        std::vector<char> name;
+        name.resize(NC_MAX_NAME + 1);
+        auto dimensionIndices = this->GetDimensionIndicesOfVariable(variableIndex);
+        result.dimensions.resize(dimensionIndices.size());
+        for (size_t ii = 0; ii < dimensionIndices.size(); ++ii)
+        {
+            result.dimensions[ii].index = dimensionIndices[ii];
+
+            if (NC_NOERR == nc_inq_dimname(this->m_netCdfFileHandle, dimensionIndices[ii], name.data()))
+            {
+                result.dimensions[ii].name = std::string(name.data());
+            }
+        }
+    }
 
     LinearScaling variableScaling;
     if (GetLinearScalingForVariable(variableIndex, variableScaling))
