@@ -23,24 +23,39 @@ int main(void)
         // return 1;
 
         // get the different variables which we need
-        auto longitudeSize = fileReader.GetSizeOfVariable("longitude");
-        auto longitude = fileReader.ReadVariableAsFloat("longitude");
-        Add<float>(longitude, -360.0F);
 
-        auto latitudeSize = fileReader.GetSizeOfVariable("latitude");
-        auto latitude = fileReader.ReadVariableAsFloat("latitude");
+        // First the mandatory variables
+        NetCdfVariable longitude = fileReader.ReadVariable("longitude");
+        Add<float>(longitude.values, -360.0F);
 
-        auto levelSize = fileReader.GetSizeOfVariable("level");
-        auto level = fileReader.ReadVariableAsFloat("level");
+        NetCdfVariable latitude = fileReader.ReadVariable("latitude");
 
-        auto timeSize = fileReader.GetSizeOfVariable("time");
-        auto time = fileReader.ReadVariableAsFloat("time");
+        NetCdfVariable level = fileReader.ReadVariable("level");
 
-        auto uSize = fileReader.GetSizeOfVariable("u");
-        auto u = fileReader.ReadVariableAsFloat("u");
+        NetCdfVariable time = fileReader.ReadVariable("time");
 
-        auto vSize = fileReader.GetSizeOfVariable("v");
-        auto v = fileReader.ReadVariableAsFloat("v");
+        NetCdfVariable u = fileReader.ReadVariable("u");
+
+        NetCdfVariable v = fileReader.ReadVariable("v");
+
+        // TODO: Check that the sizes of these variables agree...
+
+        // Then the optional variables (which are not always defined in the file)
+        NetCdfVariable relativeHumidity;
+        if (fileReader.ContainsVariable("r"))
+        {
+            relativeHumidity = fileReader.ReadVariable("r");
+        }
+        else if (fileReader.ContainsVariable("rh"))
+        {
+            relativeHumidity = fileReader.ReadVariable("rh");
+        }
+
+        NetCdfVariable cloudCoverage;
+        if (fileReader.ContainsVariable("cc"))
+        {
+            cloudCoverage = fileReader.ReadVariable("cc");
+        }
 
         // These values are to be taken from the list of volcanoes...
         double villarica_latitude = -39.42;
@@ -63,21 +78,25 @@ int main(void)
             0.60F, 0.46F, 0.24F, 0.10F
         };
 
-        const double latitudeIdx = GetFractionalIndex(latitude, villarica_latitude);
-        const double longitudeIdx = GetFractionalIndex(longitude, villarica_longitude);
+        const double latitudeIdx = GetFractionalIndex(latitude.values, villarica_latitude);
+        const double longitudeIdx = GetFractionalIndex(longitude.values, villarica_longitude);
         const double levelIdx = GetFractionalIndex(altitudes_km, villarica_altitude_m * 0.001);
 
-        auto result = InterpolateWind(u, v, uSize, { levelIdx, latitudeIdx, longitudeIdx });
+        auto result = InterpolateWind(
+            u.values,
+            v.values,
+            u.dimensions,
+            { levelIdx, latitudeIdx, longitudeIdx });
 
         // Save all the values for the NovacProgram to read
         std::ofstream windFieldFile{ "D:\\Development\\FromSantiago\\netcdfToText\\MattiasOutput_villarrica_200501_201701.txt" };
-        windFieldFile << "date time ws wd" << std::endl;
+        windFieldFile << "date time ws wse wd wde" << std::endl;
         windFieldFile.precision(1);
         windFieldFile << std::fixed << std::setw(4) << std::setfill(' ');
-        for (size_t ii = 0; ii < time.size(); ++ii)
+        for (size_t ii = 0; ii < time.values.size(); ++ii)
         {
             // time is hours since 1900-01-01 00:00:0.0
-            time_t rawtimeSinceEpoch = (time_t)(time[ii] * 3600.0) - 2208988800L;
+            time_t rawtimeSinceEpoch = (time_t)(time.values[ii] * 3600.0) - 2208988800L;
 
             // Format time, "ddd yyyy-mm-dd hh:mm:ss zzz"
             char buf[80];
@@ -86,8 +105,18 @@ int main(void)
             strftime(buf, sizeof(buf), "%Y.%m.%d %H:%M", &ts);
 
             windFieldFile << buf << " ";
+            if (result.cloudCoverage.size() > 0)
+            {
+                windFieldFile << result.cloudCoverage[ii] << " ";
+            }
+            if (result.relativeHumidity.size() > 0)
+            {
+                windFieldFile << result.relativeHumidity[ii] << " ";
+            }
             windFieldFile << result.speed[ii] << " ";
-            windFieldFile << result.direction[ii] << std::endl;
+            windFieldFile << result.speedError[ii] << " ";
+            windFieldFile << result.direction[ii] << " ";
+            windFieldFile << result.directionError[ii] << std::endl;
         }
     }
     catch (std::exception e)

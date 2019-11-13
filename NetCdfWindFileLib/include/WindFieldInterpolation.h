@@ -29,6 +29,8 @@ struct InterpolatedWind
     std::vector<double> speedError;
     std::vector<double> direction; // [degrees]
     std::vector<double> directionError; // [degrees]
+    std::vector<double> cloudCoverage; // fractional cloud coverage in the range [0, 1]
+    std::vector<double> relativeHumidity; // [%]
 };
 
 /** Performs a linear interpolation to retrieve the (wind speed, wind direction)

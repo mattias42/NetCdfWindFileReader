@@ -1,4 +1,5 @@
 #include <WindFieldInterpolation.h>
+#include <assert.h>
 
 EstimatedValue TriLinearInterpolation(const std::vector<double>& inputCube, double idxX, double idxY, double idxZ)
 {
@@ -16,6 +17,34 @@ EstimatedValue TriLinearInterpolation(const std::vector<double>& inputCube, doub
     return result;
 }
 
+void SelectCubeValues(const std::vector<float>& tensor, const std::vector<size_t>& tensorDimensions, const std::vector<size_t>& floorIdx, std::vector<double>& corners)
+{
+    assert(corners.size() == 8);
+
+    const size_t timeDim = 0;
+    const size_t lvlDim = 1;
+    const size_t latDim = 2;
+    const size_t lonDim = 3;
+
+    // ----------- Pick out the neighoring u- and v- values at this point in time -----------
+    // -----------      this is a small cube with 2x2x2 values     -----------
+    for (size_t lvlIdx = floorIdx[lvlDim]; lvlIdx <= floorIdx[lvlDim] + 1; ++lvlIdx)
+    {
+        for (size_t latIdx = floorIdx[latDim]; latIdx <= floorIdx[latDim] + 1; ++latIdx)
+        {
+            for (size_t lonIdx = floorIdx[lonDim]; lonIdx <= floorIdx[lonDim] + 1; ++lonIdx)
+            {
+                size_t index = ((floorIdx[timeDim] * tensorDimensions[lvlDim] + lvlIdx) * tensorDimensions[latDim] + latIdx) * tensorDimensions[lonDim] + lonIdx;
+
+                size_t minorIndex = ((lvlIdx - floorIdx[lvlDim]) * 2 + (latIdx - floorIdx[latDim])) * 2 + (lonIdx - floorIdx[lonDim]);
+
+                corners[minorIndex] = tensor[index];
+            }
+        }
+    }
+
+}
+
 InterpolatedWind InterpolateWind(
     const std::vector<float>& u,
     const std::vector<float>& v,
@@ -25,6 +54,7 @@ InterpolatedWind InterpolateWind(
     if (sizes.size() != 4) throw new std::invalid_argument("Invalid data to InterpolateWind, the data must be four-dimensional.");
     if (spatialIndices.size() != 3) throw new std::invalid_argument("Invalid data to InterpolateWind, there must be three spatial dimensions.");
 
+    // defining the dimensions
     const size_t timeDim = 0;
     const size_t lvlDim = 1;
     const size_t latDim = 2;
@@ -33,6 +63,8 @@ InterpolatedWind InterpolateWind(
     const size_t lvlFloor = (size_t)std::floor(spatialIndices[0]);
     const size_t latFloor = (size_t)std::floor(spatialIndices[1]);
     const size_t lonFloor = (size_t)std::floor(spatialIndices[2]);
+
+    std::vector<size_t> floorIdx = { 0, lvlFloor, latFloor, lonFloor };
 
     std::vector<double> finalWindSpeeds(sizes[timeDim]);
     std::vector<double> finalWindSpeedErrors(sizes[timeDim]);
@@ -45,7 +77,7 @@ InterpolatedWind InterpolateWind(
     std::vector<double> windSpeedTemp(8);
     std::vector<double> windDirTemp(8);
 
-    // Dimensions are [time, level, lat, lon]
+    // Dimensions are [time, level, latitude, longitude]
     for (size_t timeIdx = 0; timeIdx < sizes[timeDim]; ++timeIdx)
     {
         // ----------- Pick out the neighoring u- and v- values at this point in time -----------

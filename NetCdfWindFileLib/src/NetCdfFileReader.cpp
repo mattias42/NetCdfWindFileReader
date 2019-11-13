@@ -181,6 +181,51 @@ int NetCdfFileReader::GetIndexOfVariable(const std::string& variableName)
     return index;
 }
 
+NetCdfVariable NetCdfFileReader::ReadVariable(const std::string& variableName)
+{
+    NetCdfVariable result;
+
+    // retrieves the variable index, this throws an exception if the variable cannot be found.
+    int variableIndex = GetIndexOfVariable(variableName);
+
+    result.dimensions = this->GetSizeOfVariable(variableIndex);
+
+    LinearScaling variableScaling;
+    if (GetLinearScalingForVariable(variableIndex, variableScaling))
+    {
+        result.values = this->ReadVariableAsFloat(variableIndex, variableScaling);
+    }
+    else
+    {
+        result.values = this->ReadVariableAsFloat(variableIndex);
+    }
+
+    result.name = variableName;
+
+    return result;
+}
+
+bool NetCdfFileReader::ContainsVariable(const std::string& variableName)
+{
+    int index = 0;
+    int status = nc_inq_varid(m_netCdfFileHandle, variableName.c_str(), &index);
+
+    if (status == NC_NOERR)
+    {
+        return true;
+    }
+    else if (status == NC_ENOTVAR)
+    {
+        return false;
+    }
+    else
+    {
+        std::stringstream msg;
+        msg << "Failed to retrieve variable '" << variableName << "'. Error code returned was: " << status;
+        throw NetCdfException(msg.str().c_str(), status);
+    }
+}
+
 std::vector<size_t> NetCdfFileReader::GetSizeOfVariable(int variableIdx)
 {
     auto dimensionIndices = GetDimensionIndicesOfVariable(variableIdx);
@@ -263,66 +308,6 @@ std::vector<float> NetCdfFileReader::ReadVariableAsFloat(const std::string& vari
     int index = GetIndexOfVariable(variableName);
 
     return ReadVariableAsFloat(index, scaling);
-}
-
-std::vector<float> NetCdfFileReader::ReadVariableAsShort(int variableIdx)
-{
-    std::vector<size_t> variableSize = GetSizeOfVariable(variableIdx);
-
-    size_t totalNumberOfElements = ProductOfElements(variableSize);
-
-    std::vector<short> values(totalNumberOfElements);
-
-    int status = nc_get_var_short(m_netCdfFileHandle, variableIdx, values.data());
-    if (status != NC_NOERR)
-    {
-        std::stringstream msg;
-        msg << "Failed to retrieve the values of variable '" << variableIdx << "'. Error code returned was: " << status;
-        throw NetCdfException(msg.str().c_str(), status);
-    }
-
-    // convert the values
-    auto convertedValues = std::vector<float>(values.size());
-    for (size_t ii = 0; ii < values.size(); ++ii)
-    {
-        convertedValues[ii] = (float)values[ii];
-    }
-
-    return convertedValues;
-}
-
-std::vector<float> NetCdfFileReader::ReadVariableAsShort(int variableIdx, const LinearScaling& scaling)
-{
-    std::vector<float> values = ReadVariableAsShort(variableIdx);
-
-    for (size_t ii = 0; ii < values.size(); ++ii)
-    {
-        values[ii] = values[ii] * scaling.scaleFactor + scaling.offset;
-    }
-
-    return values;
-}
-
-std::vector<float> NetCdfFileReader::ReadVariableAsShort(const std::string& variableName)
-{
-    int index = GetIndexOfVariable(variableName);
-
-    LinearScaling variableScaling;
-    if (GetLinearScalingForVariable(index, variableScaling))
-    {
-        return ReadVariableAsShort(index, variableScaling);
-    }
-    else
-    {
-        return ReadVariableAsFloat(index);
-    }
-}
-
-std::vector<float> NetCdfFileReader::ReadVariableAsShort(const std::string& variableName, const LinearScaling& scaling)
-{
-    int index = GetIndexOfVariable(variableName);
-
-    return ReadVariableAsShort(index, scaling);
 }
 
 int NetCdfFileReader::GetNumberOfAttributesForVariable(int variableIdx)
